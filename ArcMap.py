@@ -213,24 +213,40 @@ if not is_address_method:
 else:
     current_columns = list(df.columns)
 
-    after_columns = 37
+    # after_columns = 37
+    #
+    # for field in current_columns:
+    #     if field + "_X" in current_columns:
+    #         to_drop = [field + "_X", field + "_Y"]
+    #         arcpy.AddMessage("Dropping " + ' '.join(to_drop))
+    #         df.drop(to_drop, axis=1, inplace=True)
+    #         after_columns -= 1
+    #
+    # columns_to_drop = list(range(0, after_columns))
+    # # columns_to_drop.extend(range(after_columns + num_fields - 1, after_columns + num_fields + num_added_fields))
+    # # arcpy.AddMessage(columns_to_drop)
+    # # arcpy.AddMessage(df.columns[columns_to_drop])
+    # df.drop(df.columns[columns_to_drop], axis=1, inplace=True)
+    # # df.drop(['City', 'State', 'City_1', 'State_1'], axis=1, inplace=True)
+    # final_col = df.columns.get_loc("myaddress")
+    # df.drop(df.columns[[final_col, final_col+1, final_col+2, final_col+3]], axis=1, inplace=True)
 
+    last_extra_col = df.columns.get_loc("ARC_ZIP")
+    df.drop(df.columns[list(range(0, last_extra_col+1))], axis=1, inplace=True)
+    first_column = df.columns.get_loc("myaddress")
+    df.drop(df.columns[list(range(first_column, len(df.columns)-1))], axis=1, inplace=True)
+
+    # sometimes ArcMap makes extra fields that look like fieldname+"_X" or "_Y", so we have to throw those away as well
     for field in current_columns:
         if field + "_X" in current_columns:
             to_drop = [field + "_X", field + "_Y"]
-            arcpy.AddMessage("Dropping " +  ' '.join(to_drop))
+            arcpy.AddMessage("Dropping " + ' '.join(to_drop))
             df.drop(to_drop, axis=1, inplace=True)
-            after_columns -= 1
-
-    columns_to_drop = list(range(0, after_columns))
-    columns_to_drop.extend(range(after_columns + num_fields - 1, after_columns + num_fields + num_added_fields))
-    # arcpy.AddMessage(columns_to_drop)
-    # arcpy.AddMessage(df.columns[columns_to_drop])
-    df.drop(['City', 'State'], axis=1, inplace=True)
-    df.drop(df.columns[columns_to_drop], axis=1, inplace=True)
-
-    arcpy.AddMessage(df.columns)
+    arcpy.AddMessage(list(df.columns))
     arcpy.AddMessage(original_columns)
+
+    # after adjusting the columns, we copy the column names over from the original sheet because ArcMap messes the
+    # original names up
     df.columns = original_columns
 
 # Write DateFrame back as final csv file
