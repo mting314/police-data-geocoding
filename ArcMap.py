@@ -196,6 +196,7 @@ arcpy.AddMessage("csv output to %s at %s" % (output_file_name, get_current_time(
 # rewrite the column header to match originals in case replaced whitespace with "_" or something
 df = pd.read_csv(output_file_name)  # Read Excel file as a DataFrame
 
+# sometimes ArcMap makes extra fields that look like fieldname+"_X" or "_Y", so we have to throw those away as well
 current_columns = list(df.columns)
 for field in current_columns:
     if field + "_X" in current_columns:
@@ -243,12 +244,6 @@ else:
     first_column = df.columns.get_loc("myaddress")
     df.drop(df.columns[list(range(first_column, len(df.columns)-1))], axis=1, inplace=True)
 
-    # sometimes ArcMap makes extra fields that look like fieldname+"_X" or "_Y", so we have to throw those away as well
-    for field in current_columns:
-        if field + "_X" in current_columns:
-            to_drop = [field + "_X", field + "_Y"]
-            arcpy.AddMessage("Dropping " + ' '.join(to_drop))
-            df.drop(to_drop, axis=1, inplace=True)
     arcpy.AddMessage(list(df.columns))
     arcpy.AddMessage(original_columns)
 
