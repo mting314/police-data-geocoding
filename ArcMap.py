@@ -140,7 +140,7 @@ else:
     added_x_coord_name = "my_x"
     added_y_coord_name = "my_y"
 
-    arcpy.AddMessage("Starting adding field at %s" % get_current_time())
+    arcpy.AddMessage("Starting adding my XY fields at %s" % get_current_time())
 
     arcpy.AddField_management(input_table, added_x_coord_name, "FLOAT")
     arcpy.AddField_management(input_table, added_y_coord_name, "FLOAT")
@@ -196,6 +196,14 @@ arcpy.AddMessage("csv output to %s at %s" % (output_file_name, get_current_time(
 # rewrite the column header to match originals in case replaced whitespace with "_" or something
 df = pd.read_csv(output_file_name)  # Read Excel file as a DataFrame
 
+current_columns = list(df.columns)
+for field in current_columns:
+    if field + "_X" in current_columns:
+        to_drop = [field + "_X", field + "_Y"]
+        arcpy.AddMessage("Dropping " + ' '.join(to_drop))
+        df.drop(to_drop, axis=1, inplace=True)
+
+
 # delete all new columns created in the XY coordinate process
 if not is_address_method:
     # drop the first column, which holds the "OBJECTID", an artefact of exporting an ArcMap table
@@ -208,11 +216,10 @@ if not is_address_method:
     df.columns = original_columns
 
     if "newcol" in df.columns:
+        arcpy.AddMessage("dropping newcol")
         df.drop(["newcol"], axis=1, inplace=True)
 
 else:
-    current_columns = list(df.columns)
-
     # after_columns = 37
     #
     # for field in current_columns:
