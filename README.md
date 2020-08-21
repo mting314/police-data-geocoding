@@ -7,7 +7,7 @@ This script will take a spreadsheet containing **location data** in each row, an
 
 
 ## Installation in ArcMap
-0. Download this [USA Street Address Locator](https://drive.google.com/drive/u/2/folders/1e9zmAZhVmg53lfHe5P4Hb1sKuM4mqIdG) (~8 GB) from Google Drive. From what I understand, this is giant database that essentially contains the location of just about every address in the US. Make sure to place this folder **in the same directory as this script file**.
+0. Download this [USA Street Address Locator](https://drive.google.com/drive/folders/1UtU3mWGYVMxev5N6ALUmIOEcXHIpFl7d?usp=sharing) (~8 GB) from Google Drive. From what I understand, this is giant database that essentially contains the location of just about every address in the US. Make sure to place this folder **in the same directory as this script file**.
 1. If you don't have the Catalog window open, go to **Windows** -> **Catalog** to open it, as it will be very useful for accessing the script.
 2. In the Catalog window, navigate to **Toolboxes** -> **MyToolboxes**. If you don't already have a toolbox, right-click on MyToolboxes and navigate to **New** -> **Toolbox**, which will create al Toolbox.tbx file.  
 ![create a toolbox](images/CreateToolbox.png)
