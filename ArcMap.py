@@ -133,7 +133,7 @@ if is_address_method:
     except ValueError:
         arcpy.AddError("{0} has no 'myaddress' column".format(without_sheet))
 
-    address_locator = "asdf/streetmap_na/data/Street_Addresses_US"
+    address_locator = "streetmap_na/data/Street_Addresses_US"
 
 
     address_fields = "Street myaddress;City City;State State;ZIP <None>"
