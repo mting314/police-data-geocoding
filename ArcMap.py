@@ -3,6 +3,9 @@ import os
 from datetime import datetime
 import pandas as pd
 
+
+from arcgisscripting import ExecuteError
+
 # address(1) or latlon(0)
 is_address_method = arcpy.GetParameter(0)
 # specify the input file
@@ -30,7 +33,7 @@ if ".csv" in input_sheet:
 
 elif ".xlsx" in input_sheet:  # it's an xls file, therefore need to parse out the sheet name from ArcMap input
     without_sheet = os.path.normpath(input_sheet).rsplit("\\", 1)[0]
-    my_sheet_name = os.path.normpath(input_sheet).rsplit("\\", 1)[1][:-1]
+    my_sheet_name = os.path.normpath(input_sheet).rsplit("\\", 1)[1]
     df = pd.read_excel(without_sheet, sheetname=my_sheet_name)  # Read Excel file as a DataFrame
 
 else:  # it's an xls file, therefore need to parse out the sheet name from ArcMap input
@@ -60,8 +63,13 @@ input_file = os.path.normpath(os.path.basename(without_sheet))
 original_columns = list(df.columns)
 original_columns.append("FIPS")
 
-arcpy.env.workspace = "D:/ArcGIS/Default.gdb"
+# arcpy.env.workspace = "D:/ArcGIS/Default.gdb"
 # output_directory = "D:/ArcGIS"
+
+# directory where I'm assuming you'll be mostly working in and have the Address Locator stored
+working_directory = os.path.abspath(os.path.join(arcpy.env.workspace, os.pardir))
+
+# the directory where the input spreadsheet is, and where the output will be saved
 output_directory = os.path.dirname(input_sheet)
 arcpy.env.overwriteOutput = True
 
@@ -91,9 +99,14 @@ del df
 field_names = [f.name for f in arcpy.ListFields(input_table)]
 arcpy.AddMessage(field_names)
 
-fields_to_delete = ["Join_Count", "TARGET_FID"]
+fields_to_delete = ["Join_Count", "TARGET_FID", "my_index"]
 
 if is_address_method:
+    # TODO: How to insert our own indexing to reorder after geocoding addresses?
+    # set indexing field
+    # arcpy.AddField_management(input_table, "my_index", "SHORT")
+    # arcpy.CalculateField_management(input_table, "my_index", "!OBJECTID!", "PYTHON")
+
     # set city field if doesn't exist
     if len(arcpy.ListFields(input_table, "City")) > 0:
         arcpy.AddMessage("City field exists")
@@ -120,16 +133,31 @@ if is_address_method:
     except ValueError:
         arcpy.AddError("{0} has no 'myaddress' column".format(without_sheet))
 
-    address_locator = "D:/ArcGIS/streetmap_na/data/Street_Addresses_US"
+    address_locator = "asdf/streetmap_na/data/Street_Addresses_US"
+
+
     address_fields = "Street myaddress;City City;State State;ZIP <None>"
     # address_fields = "'Single Line Input' Location"
 
     arcpy.AddMessage("Starting geocoding at %s" % get_current_time())
-    arcpy.GeocodeAddresses_geocoding(input_table, address_locator, address_fields, to_join)
+    try:
+        arcpy.GeocodeAddresses_geocoding(input_table, address_locator, address_fields, to_join)
+    except ExecuteError:
+        arcpy.AddError(arcpy.GetMessages(2))
+
+        # catch the specific error where arcpy can't find the referenced address locator
+        if "000732" in arcpy.GetMessages(2):
+            arcpy.AddError("Did you download and place the streetmap_na Address Locator folder in the script directory?")
+        raise SystemExit(0)
+
     arcpy.AddMessage("Geocoding finished.")
 
+    # geocoding alters order, so set order straight by using temporary indexing field
+    # arcpy.Sort_management("to_join_unsorted", to_join, [["my_index", "ASCENDING"]])
+    # arcpy.DeleteField_management(to_join, "my_index")
 
-# XY coords case: first designate the database, a name for the layer of XY events, and the name of columns with XY data
+
+# Latlon method: first designate the database, a name for the layer of XY events, and the name of columns with XY data
 # Then, add new fields that will be deleted later in case we need to do something funny like divide by 1000 or something
 # Calculate the values of this new field, which in many cases I guess will just be the same as the original XY columns
 # Finally, create the XY layer using our "custom" XY fields
@@ -167,7 +195,7 @@ def validateCoord(input):
     fields_to_delete.extend([added_x_coord_name, added_y_coord_name])
 
 # add Census Boundaries as layer
-joining_layer = "D:/ArcGIS/Boundaries/USA Census Tract Boundaries.lyr"
+joining_layer = "Boundaries/USA Census Tract Boundaries.lyr"
 arcpy.MakeFeatureLayer_management(in_features=joining_layer, out_layer="Census_Boundaries")
 arcpy.AddMessage("Added census tract boundaries layer.")
 
@@ -176,6 +204,9 @@ arcpy.AddMessage("Starting spatial join at %s" % get_current_time())
 arcpy.SpatialJoin_analysis(target_features=to_join, join_features="Census_Boundaries",
                            out_feature_class="joined", match_option="CLOSEST")
 arcpy.AddMessage("Spatial join finished.")
+
+# sort by index field
+# arcpy.Sort_management("joined", "joined_sort", [["my_index", "ASCENDING"]])
 
 field_names = [f.name for f in arcpy.ListFields("joined")]
 
@@ -190,7 +221,17 @@ else:
 
 output_file_name = output_directory + "/%s_geo_MT.csv" % final_file_name
 arcpy.AddMessage("Starting table to csv conversion at %s" % get_current_time())
-arcpy.TableToTable_conversion("joined", output_directory, "%s_geo_MT.csv" % final_file_name)
+
+# for some reason, exporting to csv can be really inconsistent, so keep retrying till it goes through
+for attempt in range(10):
+    try:
+        arcpy.TableToTable_conversion("joined", output_directory, "%s_geo_MT.csv" % final_file_name)
+    except ExecuteError as e:
+        arcpy.AddMessage("Attempt " + str(attempt) + " failed.")
+        arcpy.AddMessage(e)
+    else:
+        break
+
 arcpy.AddMessage("csv output to %s at %s" % (output_file_name, get_current_time()))
 
 # rewrite the column header to match originals in case replaced whitespace with "_" or something
