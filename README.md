@@ -13,7 +13,7 @@ This script will take a spreadsheet containing **location data** in each row, an
 ![add a script](images/AddScript.png)
 4. Set a name and description for this script, if you so desire, then click next.  
 ![Script Dialogue 1](images/SciptDialogue1.png)
-5. On the next screen, click the little folder icon next to the **Script File** field to open a file selector dialogue where you should select this file (ArcMap.py). Then click next.  
+5. On the next screen, click the little folder icon next to the **Script File** field to open a file selector dialogue where you should select this file ([ArcMap.py](ArcMap.py)). Then click next.  
 ![Script Dialogue 2](images/SciptDialogue2.png)
 6. Now you will have to set the script parameters. I really wish there was an easy way for me to export this somehow so I don't have to update these instructions, but either way, this part is really important. You have to set these options exactly as I have them set, otherwise the script won't work.  
 ![setting parameters 1](images/ParameterSettings1.png)
