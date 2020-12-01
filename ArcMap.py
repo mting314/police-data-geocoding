@@ -3,8 +3,9 @@ import os
 from datetime import datetime
 import pandas as pd
 
-
 from arcgisscripting import ExecuteError
+
+INITIALS = "ZB"
 
 # address(1) or latlon(0)
 is_address_method = arcpy.GetParameter(0)
@@ -135,7 +136,6 @@ if is_address_method:
 
     address_locator = "streetmap_na/data/Street_Addresses_US"
 
-
     address_fields = "Street myaddress;City City;State State;ZIP <None>"
     # address_fields = "'Single Line Input' Location"
 
@@ -147,7 +147,8 @@ if is_address_method:
 
         # catch the specific error where arcpy can't find the referenced address locator
         if "000732" in arcpy.GetMessages(2):
-            arcpy.AddError("Did you download and place the streetmap_na Address Locator folder in the script directory?")
+            arcpy.AddError(
+                "Did you download and place the streetmap_na Address Locator folder in the script directory?")
         raise SystemExit(0)
 
     arcpy.AddMessage("Geocoding finished.")
@@ -195,7 +196,7 @@ def validateCoord(input):
     fields_to_delete.extend([added_x_coord_name, added_y_coord_name])
 
 # add Census Boundaries as layer
-joining_layer = "Boundaries/USA Census Tract Boundaries.lyr"
+joining_layer = "C:\Users\general\Documents\Geocoding\police-data-geocoding-main\police-data-geocoding-main\Boundaries\USA_Census_Tract_Boundaries.lpk"
 arcpy.MakeFeatureLayer_management(in_features=joining_layer, out_layer="Census_Boundaries")
 arcpy.AddMessage("Added census tract boundaries layer.")
 
@@ -219,13 +220,13 @@ if my_sheet_name:
 else:
     final_file_name = input_file[:input_file.rfind('.')]
 
-output_file_name = output_directory + "/%s_geo_MT.csv" % final_file_name
+output_file_name = output_directory + "/%s_geo_%s.csv" % (final_file_name, INITIALS)
 arcpy.AddMessage("Starting table to csv conversion at %s" % get_current_time())
 
 # for some reason, exporting to csv can be really inconsistent, so keep retrying till it goes through
 for attempt in range(10):
     try:
-        arcpy.TableToTable_conversion("joined", output_directory, "%s_geo_MT.csv" % final_file_name)
+        arcpy.TableToTable_conversion("joined", output_directory, "%s_geo_%s.csv" % (final_file_name, INITIALS))
     except ExecuteError as e:
         arcpy.AddMessage("Attempt " + str(attempt) + " failed.")
         arcpy.AddMessage(e)
@@ -245,14 +246,19 @@ for field in current_columns:
         arcpy.AddMessage("Dropping " + ' '.join(to_drop))
         df.drop(to_drop, axis=1, inplace=True)
 
-
 # delete all new columns created in the XY coordinate process
 if not is_address_method:
     # drop the first column, which holds the "OBJECTID", an artefact of exporting an ArcMap table
     df.drop(df.columns[0], axis=1, inplace=True)
 
-    if len(list(df.columns)) != len(original_columns):
-        original_columns.insert(len(original_columns) - 1, "newcol")
+    while len(list(df.columns)) != len(original_columns):
+        og_fips = original_columns.index('FIPS')
+        new_fips = list(df.columns).index('FIPS')
+        if og_fips < new_fips:
+            original_columns.insert(len(original_columns) - 1, "newcol")
+        else:
+            original_columns.insert(len(original_columns), "newcol")
+
     arcpy.AddMessage(list(df.columns))
     arcpy.AddMessage(original_columns)
     df.columns = original_columns
@@ -281,9 +287,9 @@ else:
     # df.drop(df.columns[[final_col, final_col+1, final_col+2, final_col+3]], axis=1, inplace=True)
 
     last_extra_col = df.columns.get_loc("ARC_ZIP")
-    df.drop(df.columns[list(range(0, last_extra_col+1))], axis=1, inplace=True)
+    df.drop(df.columns[list(range(0, last_extra_col + 1))], axis=1, inplace=True)
     first_column = df.columns.get_loc("myaddress")
-    df.drop(df.columns[list(range(first_column, len(df.columns)-1))], axis=1, inplace=True)
+    df.drop(df.columns[list(range(first_column, len(df.columns) - 1))], axis=1, inplace=True)
 
     arcpy.AddMessage(list(df.columns))
     arcpy.AddMessage(original_columns)
