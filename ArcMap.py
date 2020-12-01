@@ -196,7 +196,7 @@ def validateCoord(input):
     fields_to_delete.extend([added_x_coord_name, added_y_coord_name])
 
 # add Census Boundaries as layer
-joining_layer = "C:\Users\general\Documents\Geocoding\police-data-geocoding-main\police-data-geocoding-main\Boundaries\USA_Census_Tract_Boundaries.lpk"
+joining_layer = "Boundaries\USA_Census_Tract_Boundaries.lpk"
 arcpy.MakeFeatureLayer_management(in_features=joining_layer, out_layer="Census_Boundaries")
 arcpy.AddMessage("Added census tract boundaries layer.")
 
