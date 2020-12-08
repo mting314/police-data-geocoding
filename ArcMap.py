@@ -5,7 +5,7 @@ import pandas as pd
 
 from arcgisscripting import ExecuteError
 
-INITIALS = "ZB"
+INITIALS = "MT"
 
 # address(1) or latlon(0)
 is_address_method = arcpy.GetParameter(0)
@@ -196,7 +196,7 @@ def validateCoord(input):
     fields_to_delete.extend([added_x_coord_name, added_y_coord_name])
 
 # add Census Boundaries as layer
-joining_layer = "Boundaries\USA_Census_Tract_Boundaries.lpk"
+joining_layer = "Boundaries\USA Census Tract Boundaries.lyr"
 arcpy.MakeFeatureLayer_management(in_features=joining_layer, out_layer="Census_Boundaries")
 arcpy.AddMessage("Added census tract boundaries layer.")
 
